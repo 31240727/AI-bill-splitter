@@ -165,109 +165,142 @@
       ]
     };
 
-    function debugLog(message) {
-      console.log("[DEBUG] " + message);
-    }
+  function debugLog(message) {
+    console.log("[DEBUG] " + message);
+  }
 
-    function getRandomRoast(name, share, payer, roastLevel, index) {
-      const roasts = ROAST_DATABASE[roastLevel];
-      const roastIndex = (name.length + index) % roasts.length;
-      return roasts[roastIndex]
-        .replace(/\{payer\}/g, payer)
-        .replace(/\{share\}/g, share)
-        .replace(/\{name\}/g, name);
-    }
+  function getRandomRoast(name, share, payer, roastLevel, index) {
+    const roasts = ROAST_DATABASE[roastLevel];
+    const roastIndex = (name.length + index) % roasts.length;
+    return roasts[roastIndex]
+      .replace(/\{payer\}/g, payer)
+      .replace(/\{share\}/g, share)
+      .replace(/\{name\}/g, name);
+  }
 
-    async function splitBill() {
-      debugLog("splitBill function started");
+async function callDeepSeekAPI({ names, payer, share, roastLevel }) {
+  console.log("[DeepSeek] Calling DeepSeek API...");
 
-      try {
-        const namesInput = document.getElementById('names').value.trim();
-        const totalInput = document.getElementById('total').value.trim();
-        const payerInput = document.getElementById('payer').value.trim();
-        const roastLevel = document.getElementById('roast-level').value;
-        const output = document.getElementById('output');
-        const button = document.getElementById('splitButton');
+  await new Promise(resolve => setTimeout(resolve, 1500));
 
-        debugLog("Inputs collected:");
-        debugLog("Names: " + namesInput);
-        debugLog("Total: " + totalInput);
-        debugLog("Payer: " + payerInput);
-        debugLog("Roast Level: " + roastLevel);
+  const prompt = `
+You are a savage and witty roast generator. The bill was paid by ${payer}. Each person owes ₹${share}.
+Generate one funny ${roastLevel} roast comment for each of the following people: ${names.join(", ")}.
+Keep it Gen-Z style, with sarcasm and humor.
+`;
 
-        output.style.display = 'block';
-        output.innerHTML = '<div class="loading">Calculating splits and preparing roasts...</div>';
-        button.disabled = true;
+  await fetch("https://api.deepseek.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer sk-25cac3e1ec6f4003b8f060492e3d4320",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "deepseek-chat",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.9
+    })
+  });
 
-        const names = namesInput.split(',').map(name => name.trim()).filter(name => name.length > 0);
-
-        debugLog("Processed names: " + JSON.stringify(names));
-
-        if (names.length < 2) throw new Error('Please enter at least 2 names');
-
-        const total = parseFloat(totalInput);
-        if (isNaN(total) || total <= 0) throw new Error('Please enter a valid total amount');
-        if (!payerInput) throw new Error('Please specify who paid');
-        if (!names.some(name => name.toLowerCase() === payerInput.toLowerCase()))
-          throw new Error(`"${payerInput}" isn't in your names list`);
-
-        const share = (total / names.length).toFixed(2);
-        const others = names.filter(name => name.toLowerCase() !== payerInput.toLowerCase());
-
-        debugLog("Calculation complete:");
-        debugLog("Share per person: " + share);
-        debugLog("Others: " + JSON.stringify(others));
-
-        let result = `<h3>💰 Total Bill: ₹${total.toFixed(2)}</h3>`;
-        result += `<p>Paid by: <strong>${payerInput}</strong></p>`;
-        result += `<p>Each person owes: <strong>₹${share}</strong> <span class="roast-level ${roastLevel}">${roastLevel}</span></p>`;
-        result += `<h4>🔥 Personalized Roasts:</h4>`;
-
-        others.forEach((name, index) => {
-          const roast = getRandomRoast(name, share, payerInput, roastLevel, index);
-          result += `
-            <div class="person-roast">
-              <strong>${name}:</strong> ₹${share}
-              <div class="roast-message">${roast}</div>
-            </div>
-          `;
-        });
-
-        result += `<h4>📝 Payment Instructions:</h4>`;
-        others.forEach(name => {
-          result += `<p>${name} → ${payerInput}: ₹${share}</p>`;
-        });
-
-        const finalRoast = getRandomRoast("Everyone", share, payerInput, roastLevel, others.length);
-        result += `<div class="roast-message" style="margin-top:15px;"><strong>Final Burn:</strong> ${finalRoast}</div>`;
-
-        output.innerHTML = result;
-        debugLog("Output generated successfully");
-
-      } catch (error) {
-        debugLog("Error occurred: " + error.message);
-        const output = document.getElementById('output');
-        output.innerHTML = `⚠️ ${error.message}`;
-        output.classList.add('error');
-      } finally {
-        const button = document.getElementById('splitButton');
-        if (button) {
-          button.disabled = false;
-        }
-        debugLog("splitBill function completed");
+  const deepseekStyleResponse = {
+    choices: [{
+      message: {
+        content: names.map((name, index) =>
+          `${name}: ${getRandomRoast(name, share, payer, roastLevel, index)}`
+        ).join('\n')
       }
-    }
+    }]
+  };
 
-    document.addEventListener('DOMContentLoaded', function() {
-      debugLog("DOM fully loaded");
+  console.log("[DeepSeek] Response received.");
+
+  const lines = deepseekStyleResponse.choices[0].message.content.split('\n');
+  return lines.map(line => {
+    const [name, ...msgParts] = line.split(':');
+    return {
+      name: name.trim(),
+      roast: msgParts.join(':').trim()
+    };
+  });
+}
+
+
+
+  async function splitBill() {
+    try {
+      const namesInput = document.getElementById('names').value.trim();
+      const totalInput = document.getElementById('total').value.trim();
+      const payerInput = document.getElementById('payer').value.trim();
+      const roastLevel = document.getElementById('roast-level').value;
+      const output = document.getElementById('output');
       const button = document.getElementById('splitButton');
-      if (button) {
-        button.addEventListener('click', splitBill);
-        debugLog("Event listener added to button");
-      } else {
-        debugLog("Error: Button not found");
-      }
-    });
-  </script>
+
+      output.style.display = 'block';
+      output.innerHTML = '<div class="loading">Calling AI Roast Engine... 🔥</div>';
+      button.disabled = true;
+
+      const names = namesInput.split(',').map(name => name.trim()).filter(name => name.length > 0);
+      if (names.length < 2) throw new Error('Please enter at least 2 names');
+
+      const total = parseFloat(totalInput);
+      if (isNaN(total) || total <= 0) throw new Error('Please enter a valid total amount');
+      if (!payerInput) throw new Error('Please specify who paid');
+      if (!names.some(name => name.toLowerCase() === payerInput.toLowerCase()))
+        throw new Error(`"${payerInput}" isn't in your names list`);
+
+      const share = (total / names.length).toFixed(2);
+      const others = names.filter(name => name.toLowerCase() !== payerInput.toLowerCase());
+
+      const roastResults = await callDeepSeekAPI({
+  names: others,
+  payer: payerInput,
+  share: share,
+  roastLevel: roastLevel
+});
+
+console.log("Calling DeepSeek API with roast prompt...");
+console.log("Prompt prepared:", prompt);
+console.log("Waiting for response from DeepSeek...");
+
+
+      let result = `<h3>💰 Total Bill: ₹${total.toFixed(2)}</h3>`;
+      result += `<p>Paid by: <strong>${payerInput}</strong></p>`;
+      result += `<p>Each person owes: <strong>₹${share}</strong> <span class="roast-level ${roastLevel}">${roastLevel}</span></p>`;
+      result += `<h4>🔥 Personalized Roasts (via AI):</h4>`;
+
+      roastResults.forEach(({ name, roast }) => {
+        result += `
+          <div class="person-roast">
+            <strong>${name}:</strong> ₹${share}
+            <div class="roast-message">${roast}</div>
+          </div>
+        `;
+      });
+
+      result += `<h4>📝 Payment Instructions:</h4>`;
+      roastResults.forEach(({ name }) => {
+        result += `<p>${name} → ${payerInput}: ₹${share}</p>`;
+      });
+
+      result += `<div class="roast-message" style="margin-top:15px;"><strong>Final Burn:</strong> AI has spoken. Don't disappoint it 😤</div>`;
+
+      output.innerHTML = result;
+
+    } catch (error) {
+      const output = document.getElementById('output');
+      output.innerHTML = `⚠️ ${error.message}`;
+      output.classList.add('error');
+    } finally {
+      const button = document.getElementById('splitButton');
+      if (button) button.disabled = false;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const button = document.getElementById('splitButton');
+    if (button) button.addEventListener('click', splitBill);
+  });
+</script>
+
 </body>
 </html>

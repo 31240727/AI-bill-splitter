@@ -38,3 +38,22 @@ The app sends a structured prompt to the LLM API, and then:
 | Hosting      | Localhost / GitHub Pages / Replit compatible |
 
 ---
+
+## Setup & Installation
+
+This project is entirely frontend-based and does not require a backend server or complex dependencies. Follow the steps below to set up and run the project locally.
+
+### Prerequisites
+
+- A modern web browser (Chrome, Firefox, Edge, etc.)
+- (Optional) VS Code or any text editor for code modifications
+- (Optional) Live Server extension in VS Code for local development
+
+### Steps to Run Locally
+
+1. **Clone the Repository:**
+
+   Open your terminal and run:
+   ```bash
+   git clone https://github.com/31240727/roast-master-bill-splitter.git
+   cd roast-master-bill-splitter

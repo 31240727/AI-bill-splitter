@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roast Master Bill Splitter</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #ffecd2, #fcb69f);
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 600px;
+      background: white;
+      margin: 40px auto;
+      padding: 30px 40px;
+      border-radius: 15px;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #d62828;
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 25px;
+      background-color: #ff595e;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #ff4246;
+    }
+
+    #output {
+      margin-top: 30px;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .person-roast {
+      margin-top: 15px;
+      padding: 10px;
+      border-left: 5px solid #ff595e;
+      background: #fff4f4;
+      border-radius: 8px;
+    }
+
+    .roast-message {
+      font-style: italic;
+      margin-top: 5px;
+      color: #6a040f;
+    }
+
+    .error {
+      color: red;
+      font-weight: bold;
+      padding-top: 10px;
+    }
+
+    .loading {
+      font-style: italic;
+      color: #666;
+    }
+
+    .roast-level {
+      text-transform: capitalize;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .roast-level.playful {
+      background-color: #ffe066;
+      color: #6a4c93;
+    }
+
+    .roast-level.savage {
+      background-color: #ff6b6b;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔥 Roast Master Bill Splitter</h1>
+    <p style="text-align: center;">Split bills and roast your friends!</p>
+
+    <label for="names">Names (comma separated):</label>
+    <input type="text" id="names" placeholder="e.g., Alice, Bob, Charlie">
+
+    <label for="total">Total Bill Amount:</label>
+    <input type="number" id="total" placeholder="e.g., 1200">
+
+    <label for="payer">Who paid?</label>
+    <input type="text" id="payer" placeholder="e.g., Alice">
+
+    <label for="roast-level">Roast Intensity:</label>
+    <select id="roast-level">
+      <option value="playful">Playful Teasing</option>
+      <option value="savage">Savage Roast</option>
+    </select>
+
+    <button id="splitButton">Split & Roast</button>
+
+    <div id="output"></div>
+  </div>
+
+  <script>
+    const ROAST_DATABASE = {
+      playful: [
+        "Better pay up before {payer} changes the WiFi password!",
+        "Your ₹{share} is cheaper than your dating standards!",
+        "Even your pet knows you'll be late paying this!",
+        "This is the most you've spent on others all year!",
+        "{payer} deserves a medal for putting up with you!",
+        "Pay fast and maybe you'll get invited next time!",
+        "Your share is ₹{share}... plus interest on friendship!",
+        "We all know who's the richest after this split!",
+        "Your credit score just dropped looking at this bill!",
+        "This is why we can't have nice things!"
+      ],
+      savage: [
+        "Pay ₹{share} or we'll tell everyone about that karaoke night!",
+        "Your ₹{share} debt is growing like your waistline!",
+        "Even your mom thinks ₹{share} is too much for you!",
+        "We found cheaper friends than you at the dollar store!",
+        "Your bank account is crying louder than your ex!",
+        "Pay up or we'll start charging for your bad jokes!",
+        "Your share is ₹{share}... plus emotional damages!",
+        "We've seen smaller numbers on your dating app matches!",
+        "Your financial responsibility is as missing as your gym attendance!",
+        "Pay now or we'll auction your seat at the next outing!"
+      ]
+    };
+
+    function debugLog(message) {
+      console.log("[DEBUG] " + message);
+    }
+
+    function getRandomRoast(name, share, payer, roastLevel, index) {
+      const roasts = ROAST_DATABASE[roastLevel];
+      const roastIndex = (name.length + index) % roasts.length;
+      return roasts[roastIndex]
+        .replace(/\{payer\}/g, payer)
+        .replace(/\{share\}/g, share)
+        .replace(/\{name\}/g, name);
+    }
+
+    async function splitBill() {
+      debugLog("splitBill function started");
+
+      try {
+        const namesInput = document.getElementById('names').value.trim();
+        const totalInput = document.getElementById('total').value.trim();
+        const payerInput = document.getElementById('payer').value.trim();
+        const roastLevel = document.getElementById('roast-level').value;
+        const output = document.getElementById('output');
+        const button = document.getElementById('splitButton');
+
+        debugLog("Inputs collected:");
+        debugLog("Names: " + namesInput);
+        debugLog("Total: " + totalInput);
+        debugLog("Payer: " + payerInput);
+        debugLog("Roast Level: " + roastLevel);
+
+        output.style.display = 'block';
+        output.innerHTML = '<div class="loading">Calculating splits and preparing roasts...</div>';
+        button.disabled = true;
+
+        const names = namesInput.split(',').map(name => name.trim()).filter(name => name.length > 0);
+
+        debugLog("Processed names: " + JSON.stringify(names));
+
+        if (names.length < 2) throw new Error('Please enter at least 2 names');
+
+        const total = parseFloat(totalInput);
+        if (isNaN(total) || total <= 0) throw new Error('Please enter a valid total amount');
+        if (!payerInput) throw new Error('Please specify who paid');
+        if (!names.some(name => name.toLowerCase() === payerInput.toLowerCase()))
+          throw new Error(`"${payerInput}" isn't in your names list`);
+
+        const share = (total / names.length).toFixed(2);
+        const others = names.filter(name => name.toLowerCase() !== payerInput.toLowerCase());
+
+        debugLog("Calculation complete:");
+        debugLog("Share per person: " + share);
+        debugLog("Others: " + JSON.stringify(others));
+
+        let result = `<h3>💰 Total Bill: ₹${total.toFixed(2)}</h3>`;
+        result += `<p>Paid by: <strong>${payerInput}</strong></p>`;
+        result += `<p>Each person owes: <strong>₹${share}</strong> <span class="roast-level ${roastLevel}">${roastLevel}</span></p>`;
+        result += `<h4>🔥 Personalized Roasts:</h4>`;
+
+        others.forEach((name, index) => {
+          const roast = getRandomRoast(name, share, payerInput, roastLevel, index);
+          result += `
+            <div class="person-roast">
+              <strong>${name}:</strong> ₹${share}
+              <div class="roast-message">${roast}</div>
+            </div>
+          `;
+        });
+
+        result += `<h4>📝 Payment Instructions:</h4>`;
+        others.forEach(name => {
+          result += `<p>${name} → ${payerInput}: ₹${share}</p>`;
+        });
+
+        const finalRoast = getRandomRoast("Everyone", share, payerInput, roastLevel, others.length);
+        result += `<div class="roast-message" style="margin-top:15px;"><strong>Final Burn:</strong> ${finalRoast}</div>`;
+
+        output.innerHTML = result;
+        debugLog("Output generated successfully");
+
+      } catch (error) {
+        debugLog("Error occurred: " + error.message);
+        const output = document.getElementById('output');
+        output.innerHTML = `⚠️ ${error.message}`;
+        output.classList.add('error');
+      } finally {
+        const button = document.getElementById('splitButton');
+        if (button) {
+          button.disabled = false;
+        }
+        debugLog("splitBill function completed");
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      debugLog("DOM fully loaded");
+      const button = document.getElementById('splitButton');
+      if (button) {
+        button.addEventListener('click', splitBill);
+        debugLog("Event listener added to button");
+      } else {
+        debugLog("Error: Button not found");
+      }
+    });
+  </script>
+</body>
+</html>
